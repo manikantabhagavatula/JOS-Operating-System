@@ -180,6 +180,13 @@ debuginfo_eip(uintptr_t addr, struct Eipdebuginfo *info)
 	//	which one.
 	// Your code here.
 
+	//	If *region_left > *region_right, then 'addr' is not contained in any
+	//	matching stab.
+
+	stab_binsearch(stabs, &lline, &rline, N_SLINE, addr);
+    if(lline > rline)
+    	return -1;
+	info->eip_line = stabs[rline].n_desc;
 
 	// Search backwards from the line number for the relevant filename
 	// stab.
