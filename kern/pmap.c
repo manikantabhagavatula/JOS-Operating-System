@@ -105,8 +105,8 @@ boot_alloc(uint32_t n)
 	// to a multiple of PGSIZE.
 	//
 	// LAB 2: Your code here.
-	cprintf("boot_allocated memory at %x\n", nextfree);
-	cprintf("Next memory at %x\n", ROUNDUP((char *) (nextfree+n), PGSIZE));
+	// cprintf("boot_allocated memory at %x\n", nextfree);
+	// cprintf("Next memory at %x\n", ROUNDUP((char *) (nextfree+n), PGSIZE));
 	if (n>0) {
 		char *temp = nextfree;
 		nextfree = ROUNDUP((char *) (nextfree+n), PGSIZE);
@@ -153,7 +153,7 @@ mem_init(void)
 
 	// Permissions: kernel R, user R
 	kern_pgdir[PDX(UVPT)] = PADDR(kern_pgdir) | PTE_U | PTE_P;
-	cprintf("UVPT=%x\n", UVPT);
+	//cprintf("UVPT=%x\n", UVPT);
 
 	//////////////////////////////////////////////////////////////////////
 	// Allocate an array of npages 'struct PageInfo's and store it in 'pages'.
@@ -283,6 +283,12 @@ mem_init_mp(void)
 	//
 	// LAB 4: Your code here:
 
+	int i;
+	for (i = 0; i < NCPU; ++i) {
+		cprintf("percpu_kstacks[%d]: %x\n", i, percpu_kstacks[i]);
+		boot_map_region(kern_pgdir, KSTACKTOP - KSTKSIZE - i * (KSTKSIZE + KSTKGAP), KSTKSIZE, PADDR(percpu_kstacks[i]), PTE_W);
+	}
+
 }
 
 // --------------------------------------------------------------
@@ -321,6 +327,9 @@ page_init(void)
 	// Change the code to reflect this.
 	// NB: DO NOT actually touch the physical memory corresponding to
 	// free pages!
+	
+	cprintf("MPENTRY_PADDR: %x\n", MPENTRY_PADDR);
+	cprintf("npages_basemem: %x\n", npages_basemem);
 	size_t i;
 
 	// 0xA0
@@ -334,7 +343,7 @@ page_init(void)
 	// i < 0x40FF
 	for (i = 0; i < npages; i++) {
 		// 1)
-		if (i == 0) {
+		if (i == 0 || i == PGNUM(MPENTRY_PADDR)) {
 			pages[i].pp_ref = 1;
 			pages[i].pp_link = NULL;
 		// 2) i < 0xA0
@@ -357,6 +366,8 @@ page_init(void)
 			page_free_list = &pages[i];
 		}
 	}
+
+	//cprintf("page_free_list: %x\n", page_free_list);
 
 }
 
@@ -661,7 +672,15 @@ mmio_map_region(physaddr_t pa, size_t size)
 	// Hint: The staff solution uses boot_map_region.
 	//
 	// Your code here:
-	panic("mmio_map_region not implemented");
+
+	uintptr_t current_base = base;
+	base += ROUNDUP(size, PGSIZE);
+	if (base > MMIOLIM)
+		panic("MMIO overflow");
+	boot_map_region(kern_pgdir, current_base, ROUNDUP(size, PGSIZE), pa, PTE_W | PTE_PCD | PTE_PWT | PTE_P);
+	return (void *)current_base;
+
+	//panic("mmio_map_region not implemented");
 }
 
 static uintptr_t user_mem_check_addr;
@@ -689,7 +708,7 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 {
 	// LAB 3: Your code here.
 
-	cprintf("user_mem_check va: %x, len: %x\n", va, len);
+	//cprintf("user_mem_check va: %x, len: %x\n", va, len);
 	uint32_t begin = (uint32_t) ROUNDDOWN(va, PGSIZE); 
 	uint32_t end = (uint32_t) ROUNDUP(va+len, PGSIZE);
 	uint32_t i;
@@ -701,7 +720,7 @@ user_mem_check(struct Env *env, const void *va, size_t len, int perm)
 			return -E_FAULT;
 		}
 	}
-	cprintf("user_mem_check success va: %x, len: %x\n", va, len);
+	//cprintf("user_mem_check success va: %x, len: %x\n", va, len);
 	return 0;
 }
 
