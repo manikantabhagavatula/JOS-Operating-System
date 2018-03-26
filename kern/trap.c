@@ -293,14 +293,13 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle keyboard and serial interrupts.
 	// LAB 5: Your code here.
 
-//conflict part
-	// if (tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER) {
-	// 	// cprintf("Timer\n");
-	// 	lapic_eoi();
-	// 	sched_yield();
-	// 	return;
-	// }
-//conflict part
+
+	if (tf->tf_trapno == IRQ_OFFSET + IRQ_TIMER) {
+		// cprintf("Timer\n");
+		lapic_eoi();
+		sched_yield();
+		return;
+	}
 
 
 	// Unexpected trap: The user process or the kernel has a bug.

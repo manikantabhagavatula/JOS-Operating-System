@@ -56,7 +56,7 @@ i386_init(void)
 	boot_aps();
 
 	// Start fs.
-	ENV_CREATE(fs_fs, ENV_TYPE_FS);
+	ENV_CREATE(fs_fs, ENV_TYPE_FS);		//comment this line out to run pingpong, primes and forktree after merging lab5 with lab4 branch.
 
 #if defined(TEST)
 	// Don't touch -- used by grading script!
@@ -65,8 +65,7 @@ i386_init(void)
 	// Touch all you want.
 	ENV_CREATE(user_icode, ENV_TYPE_USER);
 
-//conflict area
-    //ENV_CREATE(user_primes, ENV_TYPE_USER);
+    ENV_CREATE(user_primes, ENV_TYPE_USER);
 
 	 // ENV_CREATE(user_yield, ENV_TYPE_USER);
 	 // ENV_CREATE(user_yield, ENV_TYPE_USER);
@@ -80,7 +79,7 @@ i386_init(void)
       //ENV_CREATE(user_faultallocbad, ENV_TYPE_USER);
       //ENV_CREATE(user_faultnostack, ENV_TYPE_USER);
       //ENV_CREATE(user_forktree, ENV_TYPE_USER);
-//conflict area
+
 
 #endif // TEST*
 
