@@ -213,7 +213,38 @@ serve_read(envid_t envid, union Fsipc *ipc)
 	if (debug)
 		cprintf("serve_read %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
-	// Lab 5: Your code here:
+	// Look up the file id, read the bytes into 'ret', and update
+	// the seek position.  Be careful if req->req_n > PGSIZE
+	// (remember that read is always allowed to return fewer bytes
+	// than requested).  Also, be careful because ipc is a union,
+	// so filling in ret will overwrite req.
+	//
+	// Hint: Use file_read.
+	// Hint: The seek position is stored in the struct Fd.
+	// LAB 5: Your code here
+
+    // Find open file.
+    int r;
+
+ struct OpenFile * open_file;
+ 
+     // First, use openfile_lookup to find the relevant open file.
+    // On failure, return the error code to the client with ipc_send.
+ if ((r = openfile_lookup(envid, req->req_fileid, &open_file)) < 0)
+   return r;
+// if (open_file->o_fd->fd_offset == open_file->o_file->f_size)
+//   return -E_INVAL;
+   
+   
+    // Second, call the relevant file system function (from fs/fs.c).
+    // On failure, return the error code to the client.
+ if ((r = file_read(open_file->o_file, ret->ret_buf, req->req_n, open_file->o_fd->fd_offset))){
+   if (r > 0)
+   {
+     open_file->o_fd->fd_offset += r;
+   }
+   return r;
+ }
 	return 0;
 }
 
@@ -229,7 +260,33 @@ serve_write(envid_t envid, struct Fsreq_write *req)
 		cprintf("serve_write %08x %08x %08x\n", envid, req->req_fileid, req->req_n);
 
 	// LAB 5: Your code here.
-	panic("serve_write not implemented");
+
+	// Find open file.
+    struct OpenFile *o;
+    int r = openfile_lookup(envid, req->req_fileid, &o);
+    if (r < 0)
+        return r;
+
+    struct File *f = o->o_file;
+    struct Fd *fd = o->o_fd;
+
+    // Actual size to write.
+    size_t wrsz = req->req_n < PGSIZE ? req->req_n : PGSIZE;
+
+    // Maybe the file needs extention.
+    if (fd->fd_offset + wrsz > f->f_size)
+        f->f_size = fd->fd_offset + wrsz;
+
+    // Actual size written.
+    ssize_t wrnsz = file_write(f, req->req_buf, wrsz, fd->fd_offset);
+    if (wrnsz < 0)
+        return wrnsz;
+
+    // Update current seek position.
+    fd->fd_offset += wrnsz;
+    
+    return wrnsz;
+	// panic("serve_write not implemented");
 }
 
 // Stat ipc->stat.req_fileid.  Return the file's struct Stat to the

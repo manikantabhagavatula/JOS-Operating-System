@@ -431,6 +431,10 @@ env_create(uint8_t *binary, enum EnvType type)
 
 	load_icode(e, binary);								//loads the elf binary image into the environment
 	e->env_type = type;                                //set the environment type
+
+	if(type == ENV_TYPE_FS)
+        e->env_tf.tf_eflags =e->env_tf.tf_eflags|FL_IOPL_3; // eflags i/o privilege level 3 (user mode environment). eflags in mmu.h
+
 }
 
 //

@@ -5,7 +5,7 @@ pageref(void *v)
 {
 	pte_t pte;
 
-	if (!(uvpd[PDX(v)] & PTE_P))
+	if (!(uvpd[PDX(v)] & PTE_P))		//uvpt virtual page table
 		return 0;
 	pte = uvpt[PGNUM(v)];
 	if (!(pte & PTE_P))

@@ -49,6 +49,12 @@ bc_pgfault(struct UTrapframe *utf)
 	//
 	// LAB 5: you code here:
 
+	addr = ROUNDDOWN(addr, PGSIZE);
+    if ((r = sys_page_alloc(sys_getenvid(), addr, PTE_W|PTE_U|PTE_P)) < 0)
+        panic("sys_page_alloc in bc_pgfault");
+    if ((r = ide_read(blockno*BLKSECTS, addr, BLKSECTS)) < 0) 
+		panic("ide_read: %e", r);
+
 	// Clear the dirty bit for the disk block page since we just read the
 	// block from disk
 	if ((r = sys_page_map(0, addr, 0, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0)
@@ -77,6 +83,17 @@ flush_block(void *addr)
 		panic("flush_block of bad va %08x", addr);
 
 	// LAB 5: Your code here.
+	int r;
+	 envid_t envid = thisenv->env_id;
+if (va_is_mapped(addr) && va_is_dirty(addr))
+ {
+  addr = ROUNDDOWN(addr, PGSIZE);
+  if ((r = ide_write(blockno * BLKSECTS, addr, BLKSECTS)))			//BLKSETS = 8
+    panic("in flush_block, ide_write: %e", r);
+   if ((r = sys_page_map(envid, addr, envid, addr, uvpt[PGNUM(addr)] & PTE_SYSCALL)) < 0)
+     panic("in flush_block, sys_page_map: %e", r);
+ }
+  return;
 	panic("flush_block not implemented");
 }
 
@@ -88,7 +105,7 @@ check_bc(void)
 	struct Super backup;
 
 	// back up super block
-	memmove(&backup, diskaddr(1), sizeof backup);
+	memmove(&backup, diskaddr(1), sizeof backup);		//copies the content of superblock i.e., block-1 into backup
 
 	// smash it
 	strcpy(diskaddr(1), "OOPS!\n");
